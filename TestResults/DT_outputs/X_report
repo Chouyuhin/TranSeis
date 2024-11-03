@@ -1,0 +1,23 @@
+================== Overal Info ==============================
+date of report: 2023-02-26 18:17:15.341799
+input_hdf5: /nas-alinlp/xiaozhou.zyx/DiTing_datas/DiTing330km_part_0.hdf5
+input_testset: test_trainer_outputs/test.npy
+input_model: test_trainer_outputs/models/test_trainer_008.h5
+output_name: test_tester_outputs
+================== Testing Parameters =======================
+mode: generator
+finished the test in:  0 hours and 21 minutes and 51.22 seconds 
+loss_types: ['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
+loss_weights: [0.05, 0.4, 0.55]
+batch_size: 200
+total number of tests 20000
+gpuid: 0
+gpu_limit: 0.95
+================== Other Parameters =========================
+normalization_mode: std
+estimate uncertainty: True
+number of Monte Carlo sampling: 2
+detection_threshold: 0.3
+P_threshold: 0.1
+S_threshold: 0.1
+number_of_plots: 3
