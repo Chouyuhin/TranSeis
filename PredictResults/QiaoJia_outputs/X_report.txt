@@ -1,0 +1,23 @@
+================== Overal Info ==============================
+date of report: 2024-11-05 13:59:09.933794
+input_hdf5: G:/云南巧家宽频带数据/denoised_h5//QJ01202208_denoised.hdf5
+input_testset: None
+input_model: F:/copy/eqt_on_DiTing_DLC-master/eqt_on_DiTing_DLC-master-f3be5eb99ea42ce1cb1c6c53d728dbb47081db73/EQT_on_DiTing/test_trainer_outputs80/models/test_trainer_080.h5
+output_dir: ./detections4QJ_denoised
+================== Testing Parameters =======================
+mode: generator
+finished the test in:  0 hours and 0 minutes and 44.29 seconds 
+loss_types: ['binary_crossentropy', 'binary_crossentropy', 'binary_crossentropy']
+loss_weights: [0.2, 0.4, 0.4]
+batch_size: 100
+total number of tests 15
+gpuid: None
+gpu_limit: None
+================== Other Parameters =========================
+normalization_mode: None
+estimate uncertainty: True
+number of Monte Carlo sampling: 2
+detection_threshold: 0.3
+P_threshold: 0.1
+S_threshold: 0.1
+number_of_plots: 1000
