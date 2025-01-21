@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-@author: zhouyuxin
-last update: 
 
-
-"""
 from __future__ import division, print_function
 import tensorflow as tf
 import numpy as np
@@ -31,19 +26,15 @@ class DataGenerator(keras.utils.Sequence):
     
     """ 
     
-    Keras generator with preprocessing 
-    
-    Parameters
-    ----------
     list_IDsx: str
         List of trace names.
             
-    file_name: str
-        dir of hdf5 file containing waveforms data.
+    input_dir: str
+        dir of hdf5 file containing waveforms data and csv gile containing metadata.
         args['input_dir'] + 'DiTing330km_part_{}.hdf5'.format(part)
 
-    csv_name: str
-        Name of csv file contaning metadatas 
+    num_part: int
+        number of dataset chunk 
             
     dim: tuple
         Dimension of input traces. 
@@ -81,7 +72,7 @@ class DataGenerator(keras.utils.Sequence):
                  input_dir,
                  num_part,
                  dim, 
-                 batch_size=32, 
+                 batch_size=50, 
                  n_channels=3, 
                  phase_window= 40, 
                  shuffle=True,                 
@@ -119,13 +110,8 @@ class DataGenerator(keras.utils.Sequence):
         # list_IDs_temp： [['031999.0119', '016171.0374'], ['053929.0007', '052614.0404']]    每个part的batch，这里是2       
         #list_IDs_temp = [self.list_IDs[k] for k in indexes]    # batch of IDs
         
-        X, y1, y2, y3 = self.__data_generation(list_IDs_temp)    # each file generate an array and gather
-        # X(10,20000,3)   y1(10,20000,1)
+        X, y1, y2, y3 = self.__data_generation(list_IDs_temp)   
 
-        # X_[self.part*self.batch_size: (self.part+1)*self.batch_size,:,:] = X         # X_(270,2000,3)
-        # y1_[self.part*self.batch_size: (self.part+1)*self.batch_size,:,:] = y1
-        # y2_[self.part*self.batch_size: (self.part+1)*self.batch_size,:,:] = y2
-        # y3_[self.part*self.batch_size: (self.part+1)*self.batch_size,:,:] = y3 
         
         
         #return ({'input': X}, {'detector': y1, 'picker_P': y2, 'picker_S': y3})
@@ -197,41 +183,25 @@ class DataGenerator(keras.utils.Sequence):
         
     #     dataset = f.get('earthquake/'+str(key))    
     #     data = np.array(dataset).astype(np.float32)
-        # Generate data
-        # ipdb.set_trace()
+
         for part in range(0, len(list_IDs_temp)):                  # len(list_IDs_temp) = 27   
-            file_name = self.input_dir + 'DiTing330km_part_{}.hdf5'.format(1)
-            csv_name = self.input_dir + 'DiTing330km_part_{}.csv'.format(1)
+            file_name = self.input_dir + 'DiTing330km_part_{}.hdf5'.format()
+            csv_name = self.input_dir + 'DiTing330km_part_{}.csv'.format()
             csv_file = pd.read_csv(csv_name, dtype={'key':str})
             IDs = list_IDs_temp[part]     # 每个part对应取的batch个IDs  ['030154.0629', '017276.0137']
             with h5py.File(file_name, 'r') as f:
                 for i, ID in enumerate(IDs):
-                    #print(ID)   # 试试id能不能取到,可以取
                     additions = None
                     # with h5py.File(self.file_name, 'r') as f:
                     dataset = f.get('earthquake/'+str(ID))    
                     data = np.array(dataset).astype(np.float32)
-                    # dataset = f.get('earthquake/'+str(ID))
                     # #print(type(dataset))  # <class 'h5py._hl.dataset.Dataset'>
-                    # # 是不是不需要float32
-                    # data = np.array(dataset).astype(np.float32)
-                    #print(data.shape)       # (20000,3)   
+      
                     key = csv_file.key
-                    #print(key)
-                    # if ID in key.values:
-                    #     print('ID exists!')    # ID exists
-                    # else:
-                    #     print('ID not exitst!')
                     meta_dataset = csv_file.loc[key==ID]
-                    
-                    #print(type(meta_dataset))    # <class 'pandas.core.frame.DataFrame'>
-                    #print(meta_dataset)
-                    #meta_data_list = list(csv_file['key'])
-                
 
-                    #if ID.split('_')[-1] == 'EV':
+                
                     spt = int((meta_dataset['p_pick']+30)*100); # 100HZ  # p_pick仍然是时刻  # p_pick的到时乘上频率，'coda_end_sample']);
-                    #print(spt)
                     snr_s_Z_amp = meta_dataset['Z_S_amplitude_snr']
                     snr_s_N_amp = meta_dataset['N_S_amplitude_snr']
                     snr_s_E_amp = meta_dataset['E_S_amplitude_snr'] 
@@ -240,10 +210,6 @@ class DataGenerator(keras.utils.Sequence):
         
 
                     coda_end = int(sst+5000);
-
-                            
-                    #elif ID.split('_')[-1] == 'NO':
-                    #    data = np.array(dataset)
                 
                     
                     
@@ -313,7 +279,7 @@ class DataGeneratorTest(keras.utils.Sequence):
     dim: tuple
         Dimension of input traces. 
            
-    batch_size: int, default=32
+    batch_size: int, default=50
         Batch size.
             
     n_channels: int, default=3
@@ -322,7 +288,8 @@ class DataGeneratorTest(keras.utils.Sequence):
             
     Returns
     --------        
-    Batches of two dictionaries: {'input': X}: pre-processed waveform as input {'detector': y1, 'picker_P': y2, 'picker_S': y3}: outputs including three separate numpy arrays as labels for detection, P, and S respectively.
+    Batches of two dictionaries: {'input': X}: pre-processed waveform as input 
+    {'detector': y1, 'picker_P': y2, 'picker_S': y3}: outputs including three separate numpy arrays as labels for detection, P, and S respectively.
     
     """   
     
@@ -330,7 +297,7 @@ class DataGeneratorTest(keras.utils.Sequence):
                  list_IDs, 
                  file_name, 
                  dim, 
-                 batch_size=32, 
+                 batch_size=50, 
                  n_channels=3):
        
         'Initialization'
@@ -372,15 +339,13 @@ class DataGeneratorTest(keras.utils.Sequence):
 
     def __data_generation(self, list_IDs_temp):
         'readint the waveforms' 
-        #print(self.dim)
+
         X = np.zeros((self.batch_size, self.dim, self.n_channels))
-        #print(X.shape)
         fl = h5py.File(self.file_name, 'r')
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             dataset = fl.get('earthquake/'+str(ID))
             data = np.array(dataset)
-
             
                    
             data = self.normalize(data)  
@@ -467,29 +432,14 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
         detection.append([int(pred_DD_ind),dd_arr[-2]])    # [on, off] indexs       确定一下是pred_DD_ind开始还是从dd_arr[1]
     except:
         detection.append([int(pred_DD_ind),args['input_dimention'][0]])
-    # [  0 4166 4167 ... 6448 6449 6450]
+
     
     pp_arr = np.array([pred_PP_ind])    # 一个位置点
     print('pp_arr:{}'.format(pp_arr)) 
     ss_arr = np.array([pred_SS_ind])
     print('ss_arr:{}'.format(ss_arr)) 
 
-    '''
-    ========================== 这部分求metric时用 =============================
-    yh1[pred_DD_ind:dd_arr[-2]] = 1     # (1,20000)    [pro pro .... 1 1 1]
-    yh1[0:pred_PP_ind-200] = 0                      # [0 0 .... 1 1 1 .. 1]
-    print('type of pred_DD_mean[ts]:{}'.format(type(yh1)))  # np.array
-    yh2[pred_PP_ind-200:pred_PP_ind+200] = 1
-    yh2[0:pred_PP_ind-199] = 0
-    yh2[pred_PP_ind+201:len(yh2)] = 0   # [0 0 ... 1 1 1 ... 0 0 0]
 
-    yh3[pred_SS_ind-200:pred_SS_ind+200] = 1
-    yh3[0:pred_SS_ind-199] = 0
-    yh3[pred_SS_ind+201:len(yh3)] = 0    # [0 0 ... 1 1 1 ... 0 0 0]
-    '''
-      
-
-    
 
     P_PICKS = {}
     S_PICKS = {}
@@ -587,15 +537,7 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
                 candidate_Ss.update({Ss : S_val})    # Ss:sauto   S_val:[S_prob, S_uncertainty]
              
             if len(candidate_Ss) > 1:                
-# =============================================================================
-#                 Sr_st = 0
-#                 buffer = {}
-#                 for SsCan, S_valCan in candidate_Ss.items():
-#                     if S_valCan[0] > Sr_st:
-#                         buffer = {SsCan : S_valCan}
-#                         Sr_st = S_valCan[0]
-#                 candidate_Ss = buffer
-# =============================================================================              
+            
                 candidate_Ss = {list(candidate_Ss.keys())[0] : candidate_Ss[list(candidate_Ss.keys())[0]]}
 
 
@@ -623,23 +565,6 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
             if len(candidate_Ps) == 0:
                     candidate_Ps = {None:[None, None]}
                     
-                    
-# =============================================================================
-#             Ses =[]; Pes=[]
-#             if len(candidate_Ss) >= 1:
-#                 for SsCan, S_valCan in candidate_Ss.items():
-#                     Ses.append(SsCan) 
-#                                 
-#             if len(candidate_Ps) >= 1:
-#                 for PsCan, P_valCan in candidate_Ps.items():
-#                     Pes.append(PsCan) 
-#             
-#             if len(Ses) >=1 and len(Pes) >= 1:
-#                 PS = pair_PS(Pes, Ses, ed-bg)
-#                 if PS:
-#                     candidate_Ps = {PS[0] : candidate_Ps.get(PS[0])}
-#                     candidate_Ss = {PS[1] : candidate_Ss.get(PS[1])}
-# =============================================================================
 
             if list(candidate_Ss)[0] or list(candidate_Ps)[0]:   
 
@@ -664,8 +589,7 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
                     else:
                         S_error = None
                                             
-                #if spt and spt > bg-100 and spt < EVENTS[ev][2]:
-                #if spt and spt < EVENTS[ev][2]:
+
                 if list(candidate_Ps)[0]:  
                     P_error = spt - list(candidate_Ps)[0] 
                         
@@ -709,11 +633,6 @@ def picker_prediction(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std):
     yh3_std : 1D array
         S arrival standard deviations. 
         
-    spt : {int, None}, default=None    
-        P arrival time in sample.
-        
-    sst : {int, None}, default=None
-        S arrival time in sample. 
         
    
     Returns
@@ -745,7 +664,6 @@ def picker_prediction(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std):
         detection.append([int(pred_DD_ind),dd_arr[-2]])    # [on, off] indexs       确定一下是pred_DD_ind开始还是从dd_arr[1]
     except:
         detection.append([int(pred_DD_ind),args['input_dimention'][0]])
-    # [  0 4166 4167 ... 6448 6449 6450]
     
     pp_arr = np.array([pred_PP_ind])    # 一个位置点
     #print('pp_arr:{}'.format(pp_arr)) 
