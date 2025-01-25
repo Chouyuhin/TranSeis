@@ -1,10 +1,9 @@
 import sys
 import os
 real_dir=os.getcwd()
-print(real_dir)
-#sys.path.append('/nas-alinlp/xiaozhou.zyx/')
+#print(real_dir)
 sys.path.append(real_dir)
-print(sys.path)
+#print(sys.path)
 
 
 from generator.trainer import trainer
