@@ -99,22 +99,16 @@ class DataGenerator(keras.utils.Sequence):
         return int(np.floor(len(self.list_IDs) / self.batch_size))
 
     def __getitem__(self, index):
-        'Generate one batch of data'
+        'Generate num_part of data'
         list_IDs_temp = []
-        
-        # indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]  
         chunk_size =  len(self.list_IDs)//self.num_part     # 60000
         for i in range(0, len(self.list_IDs), chunk_size):
             chunk = self.list_IDs[i:i+chunk_size]      # 60000   chunk[0] = 031999.0119
             list_IDs_temp.append([chunk[j] for j in range(self.batch_size)])     # whole batch of IDs from 27 files
-        # list_IDs_temp： [['031999.0119', '016171.0374'], ['053929.0007', '052614.0404']]    每个part的batch，这里是2       
-        #list_IDs_temp = [self.list_IDs[k] for k in indexes]    # batch of IDs
         
         X, y1, y2, y3 = self.__data_generation(list_IDs_temp)   
 
         
-        
-        #return ({'input': X}, {'detector': y1, 'picker_P': y2, 'picker_S': y3})
         return ({'input': X}, {'detector': y1, 'picker_P': y2, 'picker_S': y3})
 
     
@@ -176,13 +170,6 @@ class DataGenerator(keras.utils.Sequence):
         y2 = np.zeros((self.num_part*self.batch_size, self.dim, 1))    # labels for P
         y3 = np.zeros((self.num_part*self.batch_size, self.dim, 1))    # labels for S          # diting_0.hdf5 
         
-        # DiTing_csv_path = '/nas-alinlp/xiaozhou.zyx/DiTing_datas/DiTing330km_part_0.csv'
-        # 试试能不能读取dataset,试过可行
-        # dataset = fl.get('earthquake/'+str('000001.0004'))
-        # print(list_IDs_temp)
-        
-    #     dataset = f.get('earthquake/'+str(key))    
-    #     data = np.array(dataset).astype(np.float32)
 
         for part in range(0, len(list_IDs_temp)):                  # len(list_IDs_temp) = 27   
             file_name = self.input_dir + 'DiTing330km_part_{}.hdf5'.format()
@@ -192,10 +179,9 @@ class DataGenerator(keras.utils.Sequence):
             with h5py.File(file_name, 'r') as f:
                 for i, ID in enumerate(IDs):
                     additions = None
-                    # with h5py.File(self.file_name, 'r') as f:
+
                     dataset = f.get('earthquake/'+str(ID))    
                     data = np.array(dataset).astype(np.float32)
-                    # #print(type(dataset))  # <class 'h5py._hl.dataset.Dataset'>
       
                     key = csv_file.key
                     meta_dataset = csv_file.loc[key==ID]
@@ -385,7 +371,6 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
     yh3 : 1D array
         S arrival probability.. [0 0 ... 1 1 1 ... 0 0 0] 
 
-
     yh1_std : 1D array [1,20000]
         Detection standard deviations. 
         
@@ -395,10 +380,10 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
     yh3_std : 1D array
         S arrival standard deviations. 
         
-    spt : {int, None}, default=None    
+    spt : {int, None}   
         P arrival time in sample.
         
-    sst : {int, None}, default=None
+    sst : {int, None}
         S arrival time in sample. 
         
    
@@ -435,9 +420,9 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
 
     
     pp_arr = np.array([pred_PP_ind])    # 一个位置点
-    print('pp_arr:{}'.format(pp_arr)) 
+    #print('pp_arr:{}'.format(pp_arr)) 
     ss_arr = np.array([pred_SS_ind])
-    print('ss_arr:{}'.format(ss_arr)) 
+    #print('ss_arr:{}'.format(ss_arr)) 
 
 
 
@@ -476,10 +461,6 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
                 S_prob = np.round(yh3[int(sauto)], 3) 
                 S_PICKS.update({sauto : [S_prob, S_uncertainty]})          # S_PICKS= {2306: [1.0, 0.0]}
             
-
-
-
-    
         
     if len(detection) > 0:
         D_uncertainty = None  
@@ -533,7 +514,6 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
                                     
             candidate_Ss = {}
             for Ss, S_val in S_PICKS.items():
-                #if Ss > bg and Ss < ed:
                 candidate_Ss.update({Ss : S_val})    # Ss:sauto   S_val:[S_prob, S_uncertainty]
              
             if len(candidate_Ss) > 1:                
@@ -547,10 +527,8 @@ def picker(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, spt=None, sst=None):
             candidate_Ps = {}
             for Ps, P_val in P_PICKS.items():
                 if list(candidate_Ss)[0]:
-                    #if Ps > bg-100 and Ps < list(candidate_Ss)[0]-10:
                     candidate_Ps.update({Ps : P_val}) 
                 else:         
-                    #if Ps > bg-100 and Ps < ed:
                     candidate_Ps.update({Ps : P_val}) 
                     
             if len(candidate_Ps) > 1:
@@ -706,9 +684,6 @@ def picker_prediction(args, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std):
                 S_prob = np.round(yh3[int(sauto)], 3) 
                 S_PICKS.update({sauto : [S_prob, S_uncertainty]})          # S_PICKS= {2306: [1.0, 0.0]}
             
-
-
-
     
         
     if len(detection) > 0:
@@ -942,8 +917,6 @@ class LayerNormalization(keras.layers.Layer):
     
     """ 
     
-    Layer normalization layer modified from https://github.com/CyberZHG based on [Layer Normalization](https://arxiv.org/pdf/1607.06450.pdf)
-    
     Parameters
     ----------
     center: bool
@@ -1035,7 +1008,7 @@ class LayerNormalization(keras.layers.Layer):
     
     
 class FeedForward(keras.layers.Layer):
-    """Position-wise feed-forward layer. modified from https://github.com/CyberZHG 
+    """
     # Arguments
         units: int >= 0. Dimension of hidden units.
         activation: Activation function to use
@@ -1321,7 +1294,6 @@ class SeqSelfAttention(keras.layers.Layer):
         batch_size = input_shape[0]
         input_len = inputs.get_shape().as_list()[1]
 
-        # h_{t, t'} = \tanh(x_t^T W_t + x_{t'}^T W_x + b_h)
         q = K.expand_dims(K.dot(inputs, self.Wt), 2)
         k = K.expand_dims(K.dot(inputs, self.Wx), 1)
         if self.use_additive_bias:
@@ -1329,7 +1301,6 @@ class SeqSelfAttention(keras.layers.Layer):
         else:
             h = K.tanh(q + k)
 
-        # e_{t, t'} = W_a h_{t, t'} + b_a
         if self.use_attention_bias:
             e = K.reshape(K.dot(h, self.Wa) + self.ba, (batch_size, input_len, input_len))
         else:
@@ -1337,7 +1308,6 @@ class SeqSelfAttention(keras.layers.Layer):
         return e
 
     def _call_multiplicative_emission(self, inputs):
-        # e_{t, t'} = x_t^T W_a x_{t'} + b_a
         e = K.batch_dot(K.dot(inputs, self.Wa), K.permute_dimensions(inputs, (0, 2, 1)))
         if self.use_attention_bias:
             e += self.ba[0]
