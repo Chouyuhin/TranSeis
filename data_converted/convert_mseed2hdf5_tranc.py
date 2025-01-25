@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Jun 21 16:43:00 2024
-
-@author: chouyuhin
-
-last update: 06/27/2024
-"""
-
 import obspy
 import re
 import h5py
