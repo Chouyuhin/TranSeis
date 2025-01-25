@@ -1,13 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-modified on Fri Oct 28 14:32:14 2022
 
-@author: xiaozhou.zyx
-last update: 
-
-# 457line: trace_name -> key
-"""
 
 from __future__ import print_function
 import os
@@ -66,11 +59,8 @@ def trainer(input_dir=None,
     
     Parameters
     ----------
-    input_hdf5: str, default=None
-        Path to an hdf5 file containing only one class of data with NumPy arrays containing 3 component waveforms each 1 min long.
-
-    input_csv: str, default=None
-        Path to a CSV file with one column (trace_name) listing the name of all datasets in the hdf5 file.
+    input_dir: str, default=None
+        Path to hdf5 file and csv file containing only one class of data with NumPy arrays containing 3 component waveforms each 1 min long.
 
     num_part: int, default=None
         number of parts of files
@@ -105,14 +95,11 @@ def trainer(input_dir=None,
     augmentation: bool, default=True
         If True, data will be augmented simultaneously during the training.
 
-
     shift_event_r: float, default=0.99
         Rate of augmentation for randomly shifting the event within a trace.
      
-
     coda_ratio: float, defaults=0.4
         % of S-P time to extend event/coda envelope past S pick.
-        
         
     loss_weights: list, defaults=[0.03, 0.40, 0.58]
         Loss weights for detection, P picking, and S picking respectively.
@@ -189,57 +176,15 @@ def trainer(input_dir=None,
     "use_multiprocessing": use_multiprocessing
     }
                        
-    def train(args):
-        """ 
-        
-        Performs the training.
-    
-        Parameters
-        ----------
-        args : dic
-            A dictionary object containing all of the input parameters. 
-
-        Returns
-        -------
-        history: dic
-            Training history.  
-            
-        model: 
-            Trained model.
-            
-        start_training: datetime
-            Training start time. 
-            
-        end_training: datetime
-            Training end time. 
-            
-        save_dir: str
-            Path to the output directory. 
-            
-        save_models: str
-            Path to the folder for saveing the models.  
-            
-        training size: int
-            Number of training samples.
-            
-        validation size: int
-            Number of validation samples.  
-            
-        """    
-
-        
+    def train(args): 
+  
         save_dir, save_models=_make_dir(args['output_name'])
          
         #ipdb.set_trace()
         callbacks=_make_callback(args, save_models)
-        # gpus = tf.config.list_logical_devices('GPU')
-        # strategy = tf.distribute.MirroredStrategy(gpus)
-        # with strategy.scope():
         model=_build_model(args)
         model.compile(loss=args['loss_types'], loss_weights=args['loss_weights'], optimizer=Adam(lr=_lr_schedule(0)), metrics=[acc])
-        
-
-        
+         
         if args['gpuid']:           
             os.environ['CUDA_VISIBLE_DEVICES'] = '{}'.format(gpuid)
             tf.Session(config=tf.ConfigProto(log_device_placement=True))
@@ -248,20 +193,13 @@ def trainer(input_dir=None,
             config.gpu_options.per_process_gpu_memory_fraction = float(args['gpu_limit']) 
             K.tensorflow_backend.set_session(tf.Session(config=config))
         
-        start_training = time.time()   
-    
-            
-            
+        start_training = time.time()      
                 
         training = []
         validation = []
-
-        
         #ipdb.set_trace()    
         for part in range(args['num_part']):
-            # file_name, csv_name = get_file_name(args, part) 
             training_, validation_=_split(args, part,  save_dir=save_dir)       # part list of IDs of training,testing validation
-            # len(training) = 60000 
             training.extend(training_)       # all IDs from 27 files ， len = 60000*27
             validation.extend(validation_)
 
@@ -284,13 +222,9 @@ def trainer(input_dir=None,
                             'shuffle': False,  
                             'norm_mode': args['normalization_mode'],
                             'augmentation': False}
-        
-
 
         training_generator = DataGenerator(training, **params_training)      # <EQTransformer.core.EqT_utils.DataGenerator object at 0x7f89183a9550>
         validation_generator = DataGenerator(validation,  **params_validation)
-
-        
 
         print('Started training  ...') 
         history = model.fit_generator(generator=training_generator,
@@ -299,9 +233,7 @@ def trainer(input_dir=None,
                                     workers=16,    
                                     callbacks=callbacks, 
                                     epochs=args['epochs'],
-                                    class_weight=None)
-        
-                
+                                    class_weight=None)       
 
         end_training = time.time()  
         
@@ -316,44 +248,7 @@ def trainer(input_dir=None,
     # 'val_loss', 'val_detector_loss', 'val_picker_P_loss', 'val_picker_S_loss', 
     # 'val_detector_accuracy', 'val_picker_P_accuracy', 'val_picker_S_accuracy', 'lr'])
 
-                
-# def _batch_all_(args, part, list_IDs, X, y1, y2, y3, **kwargs):
-#     """
-#     每个part的batch放到一起组成一整个batch
-#     """
-#     ipdb.set_trace() 
-#     X_ = DataGenerator(list_IDs, **kwargs)
-    
-        
-#     X[(part-1)*args['batch_size']:part*args['batch_size'],:,:] = X_ 
-#     y1[(part-1)*args['batch_size']:part*args['batch_size'],:,:] = y1_
-#     y2[(part-1)*args['batch_size']:part*args['batch_size'],:,:] = y2_
-#     y3[(part-1)*args['batch_size']:part*args['batch_size'],:,:] = y3_       #所有data的batch放到一起组成一整个batch
 
-    
-#     return ({'input': X}, {'detector': y1, 'picker_P': y2, 'picker_S': y3})
-
-
-'''
-def get_file_name(args,
-                    part,
-                    ):
-
-    """
-    Input:
-    part: batch of IDs part 
-
-    Output:
-    data
-    """
-    # with h5py.File(args['input_dir'] + 'DiTing330km_part_{}.hdf5'.format(part), 'r') as f:
-    #     dataset = f.get('earthquake/'+str(key))    
-    #     data = np.array(dataset).astype(np.float32)
-    file_name = args['input_dir'] + 'DiTing330km_part_{}.hdf5'.format(part)
-    csv_name = args['input_dir'] + 'DiTing330km_part_{}.csv'.format(part)
-
-    return file_name, csv_name
-'''
 
 def _make_dir(output_name): 
     """ 
@@ -451,7 +346,7 @@ def _split(args, part, save_dir):
     df = pd.read_csv(args['input_dir'] + 'DiTing330km_part_{}.csv'.format(1), dtype={'key':str}) 
     key = df['key']
     key_correct = [x.split('.') for x in key]
-    #print(key_correct)
+
     for i in key_correct:
         #print(i)
         key_correct = i[0].rjust(6,'0')+ '.' + i[1].ljust(4,'0')
@@ -505,7 +400,6 @@ def _make_callback(args, save_models):
                                    patience=args['patience']-2,
                                    min_lr=0.5e-6)
 
-    #callbacks = [checkpoint, lr_reducer, lr_scheduler, early_stopping_monitor]
     callbacks = [checkpoint, lr_reducer, lr_scheduler]
     return callbacks
  
@@ -516,53 +410,6 @@ def _make_callback(args, save_models):
 
 
 def _document_training(history, model, start_training, end_training, save_dir, save_models, training_size, validation_size, args): 
-
-    """ 
-    
-    Write down the training results.
-
-    Parameters
-    ----------
-    history: dic
-        Training history.  
-   
-    model: 
-        Trained model.  
-
-    start_training: datetime
-        Training start time. 
-
-    end_training: datetime
-        Training end time.    
-         
-    save_dir: str
-        Path to the output directory. 
-
-    save_models: str
-        Path to the folder for saveing the models.  
-      
-    training_size: int
-        Number of training samples.    
-
-    validation_size: int
-        Number of validation samples. 
-
-    args: dic
-        A dictionary containing all of the input parameters. 
-              
-    Returns
-    -------- 
-    
-
-    ./output_name/X_report.txt: A summary of parameters used for the prediction and perfomance.
-
-    ./output_name/X_learning_curve_f1.png: The learning curve of Fi-scores.         
-
-    ./output_name/X_learning_curve_loss.png: The learning curve of loss.  
-        
-        
-    """   
-    
 
     model.save(save_dir+'/final_model.h5')
     model.to_json()   
