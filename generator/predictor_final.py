@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-
-@author: zhouyuxin
-last update: 08/15/2024
-
-"""
 
 from __future__ import print_function
 import os
@@ -128,10 +122,11 @@ def predictor(input_dir=None,
       
     Returns
     -------- 
-    ./output_dir/X_test_results.csv: A table containing all the detection, and picking results. Duplicated events are already removed.      
+    ./output_dir/X_test_results.csv
         
-        
-    ./output_dir/figures: A folder containing plots detected events and picked arrival times. 
+    ./output_dir/picks_results.csv
+    
+    ./output_dir/figures
     
 
     Notes
@@ -219,7 +214,6 @@ def predictor(input_dir=None,
 
     
    
-    print('Loading is complete!', flush=True)  
     print('Predicting ...', flush=True)    
 
     
@@ -239,13 +233,9 @@ def predictor(input_dir=None,
             station_list = [ev.split(".")[0] for ev in listdir(args["input_dir"]) ];  # input_dir = ../hdf5_merged     station_list=[QJ01,QJ02,...,QJ10]
         station_list = sorted(set(station_list))   # set去重，sort默认升序排列
         print(f"######### There are files for {len(station_list)} stations in {args['input_dir']} directory. #########", flush=True)
-        # station_list = ['QJ01']
         
         for ct, st in enumerate(station_list):
-            # # st = QJ01
             args["input_hdf5"] = args["input_dir"]+"/"+st+".hdf5"
-
-            
             save_dir = os.path.join(out_dir, str(st)+'_outputs')
             save_figs = os.path.join(save_dir, 'figures') 
             if os.path.isdir(save_dir):
@@ -285,9 +275,7 @@ def predictor(input_dir=None,
             for _ in range(total_iters):
                         
                 pbar_test.update()
-                new_list = next(list_generator)  # 遍历一个batch的keys
-
-                
+                new_list = next(list_generator)  # 遍历一个batch的keys   
 
                 params_prediction = {'file_name': str(args['input_hdf5']), 
                             'dim': args['input_dimention'][0],
@@ -321,10 +309,7 @@ def predictor(input_dir=None,
                         
                 else:          
                     pred_DD_mean, pred_PP_mean, pred_SS_mean = model.predict_generator(generator=prediction_generator)
-                    # pred_DD_mean:yh1 ; pred_PP_mean:yh2;  pred_SS_mean:yh3
-                    # argmax
-                    
-                    
+                                       
                     pred_DD_mean = pred_DD_mean.reshape(pred_DD_mean.shape[0], pred_DD_mean.shape[1])    # （200，20000）
                     pred_PP_mean = pred_PP_mean.reshape(pred_PP_mean.shape[0], pred_PP_mean.shape[1]) 
                     pred_SS_mean = pred_SS_mean.reshape(pred_SS_mean.shape[0], pred_SS_mean.shape[1]) 
@@ -333,23 +318,13 @@ def predictor(input_dir=None,
                     pred_PP_std = np.zeros((pred_PP_mean.shape))
                     pred_SS_std = np.zeros((pred_SS_mean.shape))  
                 
-
-                
-
-
-
                 pred_set={}
-
                 
                 for ID in new_list:   # list of keys for tests
                     dataset = fl.get('earthquake/'+str(ID))    
                     pred_set.update( {str(ID) : dataset}) 
-
-                
+               
                 for ts in range(pred_DD_mean.shape[0]):  # 遍历一个batch ts=0，。。。，199
-
-
-                    
 
                     evi =  new_list[ts]    # 要预测的key，title
                     dataset = pred_set[evi] 
@@ -588,12 +563,6 @@ def list_hdf5_groups(hdf5_file):
     return wave_ids
 
 
-
-    
-    
-    
-
-
 def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh3_std, matches):
     
 
@@ -603,8 +572,6 @@ def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh
 
     Parameters
     ----------
-    meta_dataset: obj
-        The csv obj containing a NumPy array of 3 component data and associated attributes.
     
     dataset: obj
         The hdf5 obj containing a NumPy array of 3 component data and associated attributes.
@@ -667,21 +634,12 @@ def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh
     data = np.array(dataset)
     fig, axs = plt.subplots(4, 1, figsize=(7.5, 5), sharex=True)
     fig.suptitle(str(evi),y=0.92)
- 
-    # fig = plt.figure()
-    # ax = fig.add_subplot(411)    
+
     
     # 第一个图     
-    axs[0].plot(data[:, 0], color='#1f77b4')
-    #plt.rcParams["figure.figsize"] = (8,5)
-    #legend_properties = {'weight':'bold'}  
-    # plt.title(str(evi))     # evi==key
-    #plt.tight_layout()
-    #ymin, ymax = axs[0].get_ylim() 
-         
+    axs[0].plot(data[:, 0], color='#1f77b4')         
     ppl = None
     ssl = None  
-
     
     if len(predicted_P) > 0: 
 
@@ -698,9 +656,7 @@ def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh
 
     # 4行1列第2个图  
     axs[1].plot(data[:, 1] , color='#1f77b4')
-    #plt.tight_layout()  # 调整间隔适应画布
-                  
-    
+
     if len(predicted_P) > 0: 
 
         for pt in predicted_P:
@@ -719,7 +675,6 @@ def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh
 
       # 第3个预测图
     axs[2].plot(data[:, 2], color='#1f77b4')   
-    #plt.tight_layout() 
              
     if len(predicted_P) > 0: 
 
@@ -739,21 +694,16 @@ def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh
                 
     # detection的图
     x = np.linspace(0, data.shape[0], data.shape[0], endpoint=True)    # x等差数列，x
-    #print('x.shape:{}'.format(x.shape))
     
     if args['estimate_uncertainty']:                               
         axs[3].plot(x, yh1, color='#1f77b4', linestyle='--', linewidth=1.5, label='Detection')    # x(1,) yh1(20000,)
         lowerD = yh1-yh1_std
         upperD = yh1+yh1_std
         axs[3].fill_between(x, lowerD, upperD, color='#1f77b4', alpha=0.2)    
-        
-             
+                  
     else:
         axs[3].plot(x, yh1, color='#1f77b4', linestyle='--', alpha = 0.5, linewidth=1.5, label='Detection')                       
-       
-    
-
-                          
+                         
     pred_DD_ind = K.argmax(yh1, axis=-1)# 概率最大的位置   [2961]   
     pred_PP_ind = K.argmax(yh2, axis=-1)   # P点概率最大的位置
     pred_SS_ind = K.argmax(yh3, axis=-1)
@@ -768,13 +718,9 @@ def _plotter( dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std, yh2_std, yh
     
     axs[3].plot(x, yh2, color='#d62728', linestyle='-.', linewidth=1.5, label='P_probability')
     axs[3].plot(x, yh3, color='#ff7f0e', linestyle='dotted', linewidth=1.5, label='S_probability')
-    #plt.tight_layout()       
-    #axs[3].ylim((-0.1, 1.1))
     axs[3].legend(loc='upper right', fontsize=9) 
-    # 调整布局
+
     plt.tight_layout(rect=[0, 0, 1, 0.96])                    
     fig.savefig(os.path.join(save_figs, str(evi.split('/')[-1])+'.svg')) 
 
-
-    
     
