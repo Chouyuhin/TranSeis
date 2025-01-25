@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Apr 25 17:44:14 2018
-
-@author: mostafamousavi
-last update: 05/27/2021
-
-"""
 
 from __future__ import print_function
 import os
@@ -66,16 +59,9 @@ def tester(input_hdf5=None,
     input_model: str, default=None
         Path to a trained model.
         
-    output_dir: str, default=None
+    output_name: str, default=None
         Output directory that will be generated. 
-        
-    output_probabilities: bool, default=False
-        If True, it will output probabilities and estimated uncertainties for each trace into an HDF file. 
 
-          
-    P_threshold: float, default=0.1
-        A value which the P probabilities above it will be considered as P arrival.
-               
     number_of_plots: float, default=10
         The number of plots for detected events outputed for each station data.
         
@@ -94,7 +80,6 @@ def tester(input_hdf5=None,
     input_dimention: tuple, default=(6000, 3)
         Loss types for detection, P picking, and S picking respectively.          
 
-                      
     batch_size: int, default=500 
         Batch size. This wont affect the speed much but can affect the performance. A value beteen 200 to 1000 is recommanded.
 
@@ -112,11 +97,6 @@ def tester(input_hdf5=None,
     ./output_name/X_report.txt: A summary of the parameters used for prediction and performance.
         
     ./output_name/figures: A folder containing plots detected events and picked arrival times. 
-    
-
-    Notes
-    --------
-    Estimating the uncertainties requires multiple predictions and will increase the computational time. 
     
         
     """ 
@@ -168,8 +148,7 @@ def tester(input_hdf5=None,
                   loss_weights =  args['loss_weights'],           
                   optimizer = Adam(lr = 0.001),
                   metrics = ['acc'])
-    # with tf.compat.v1.Session() as sess:
-    #     print('f1:{}'.format(model.f1))
+
     
    
     print('Loading is complete!', flush=True)  
@@ -195,22 +174,8 @@ def tester(input_hdf5=None,
     
     csvTst = open(os.path.join(save_dir,'X_test_results.csv'), 'w')          
     test_writer = csv.writer(csvTst, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    test_writer.writerow([#'network_code', 
-    #                       'ID', 
-    #                       'earthquake_distance_km', 
-    #                       'snr_db', 
+    test_writer.writerow([
                           'key', 
-                        #   'trace_category', 
-                        #   'trace_start_time', 
-                        #   'source_magnitude', 
-                        #   'p_arrival_sample',
-                        #   'p_status', 
-                        #   'p_weight',
-                        #   's_arrival_sample', 
-                        #   's_status', 
-                        #   's_weight', 
-                        #   'receiver_type',
-                          
                           'number_of_detections',
                           'detection_probability',
                           'detection_uncertainty',
@@ -268,10 +233,7 @@ def tester(input_hdf5=None,
                 
         else:          
             pred_DD_mean, pred_PP_mean, pred_SS_mean = model.predict_generator(generator=test_generator)
-            # pred_DD_mean:yh1 ; pred_PP_mean:yh2;  pred_SS_mean:yh3
-            # argmax
-            
-            
+              
             pred_DD_mean = pred_DD_mean.reshape(pred_DD_mean.shape[0], pred_DD_mean.shape[1])    # （200，20000）
             pred_PP_mean = pred_PP_mean.reshape(pred_PP_mean.shape[0], pred_PP_mean.shape[1]) 
             pred_SS_mean = pred_SS_mean.reshape(pred_SS_mean.shape[0], pred_SS_mean.shape[1]) 
@@ -279,18 +241,6 @@ def tester(input_hdf5=None,
             pred_DD_std = np.zeros((pred_DD_mean.shape))   # (200,20000)
             pred_PP_std = np.zeros((pred_PP_mean.shape))
             pred_SS_std = np.zeros((pred_SS_mean.shape))  
-        
-        # ipdb.set_trace() 
-        # pred_DD_ind = K.argmax(pred_DD_mean, axis=-1)     # 概率最大的位置       
-        # pred_PP_ind = K.argmax(pred_PP_mean, axis=-1)
-        # pred_SS_ind = K.argmax(pred_PP_mean, axis=-1)
-        
-        # pred_DD_mean = tf.one_hot(pred_DD_ind, 20000, dtype=tf.float32)
-        # pred_PP_mean = tf.one_hot(pred_PP_ind, 20000, dtype=tf.float32)
-        # pred_SS_mean = tf.one_hot(pred_SS_ind, 20000, dtype=tf.float32)
-        
-
-
 
         test_set={}
         meta_test_set={}
@@ -298,10 +248,7 @@ def tester(input_hdf5=None,
         csv_file = pd.read_csv(args['input_csv'], dtype={'key':str})
         
         for ID in new_list:   # list of keys for tests
-            #if ID.split('_')[-1] == 'EV':
             dataset = fl.get('earthquake/'+str(ID))    
-            #elif ID.split('_')[-1] == 'NO':
-                #dataset = fl.get('data/'+str(ID))
             key = csv_file.key
             meta_dataset = csv_file.loc[key==ID]   
             # print(type(meta_dataset))                    #  <class 'pandas.core.frame.DataFrame'>
@@ -315,28 +262,7 @@ def tester(input_hdf5=None,
             print('pred_PP_mean:{}'.format(pred_PP_mean))   # 非空
             print('pred_SS_mean:{}'.format(pred_SS_mean))   # 非空
             print('ts in pred_DD_mean.shape[0]:{}'.format(ts))   #:200
-            #ipdb.set_trace()
 
-            '''
-            ========= 这一块放在picker里面==================
-            ========= 仍然保留pred是概率 ===================
-            pred_DD_ind = K.argmax(pred_DD_mean[ts], axis=-1)     # 概率最大的位置   [19727]    
-            pred_PP_ind = K.argmax(pred_PP_mean[ts], axis=-1)
-            pred_SS_ind = K.argmax(pred_PP_mean[ts], axis=-1)
-
-            pred_DD_mean[ts][pred_PP_ind-200:input_dimention[0]] = 1     # (1,20000)    [pro pro .... 1 1 1]
-            pred_DD_mean[ts][0:pred_PP_ind-200] = 0                      # [0 0 .... 1 1 1 .. 1]
-            print('type of pred_DD_mean[ts]:{}'.format(type(pred_DD_mean[ts])))  # np.array
-            pred_PP_mean[ts][pred_PP_ind-200:pred_PP_ind+200] = 1
-            pred_PP_mean[ts][0:pred_PP_ind-199] = 0
-            pred_PP_mean[ts][pred_PP_ind+201:input_dimention[0]] = 0   # [0 0 ... 1 1 1 ... 0 0 0]
-
-            pred_SS_mean[ts][pred_SS_ind-200:pred_SS_ind+200] = 1
-            pred_SS_mean[ts][0:pred_SS_ind-199] = 0
-            pred_SS_mean[ts][pred_SS_ind+201:input_dimention[0]] = 0    # [0 0 ... 1 1 1 ... 0 0 0]
-            '''
-        
-            
 
             evi =  new_list[ts]    # 要预测的key，title
             dataset = test_set[evi] 
@@ -471,11 +397,6 @@ def _output_writer_acc(args, matches, output_writer, csvfile, filename, pick_err
     csvfile.flush() 
 
 
-
-    
-
-
-    
 def _output_writer_pred(args,  
                         evi, 
                         spt,
@@ -494,13 +415,16 @@ def _output_writer_pred(args,
     ----------
     args: dic
         A dictionary containing all of the input parameters.    
- 
-    meta_dataset: csvobj
-        Dataset object of the trace.
 
     evi: str
         Trace name.    
-              
+           
+    spt: int
+        P arrival
+
+    sst: int
+        S arrival
+        
     output_writer: obj
         For writing out the detection/picking results in the CSV file.
         
@@ -531,32 +455,15 @@ def _output_writer_pred(args,
         S_pred = matches[list(matches)[0]][6] 
         S_error = pick_errors[list(matches)[0]][1]  
         
-
-        
-
     else: 
        
-
         P_pred = None
         P_error = None
         
         S_pred = None
         S_error = None
-    #print(type(meta_dataset))
-    #if evi.split('_')[-1] == 'EV':                                     
-    # network_code = meta_dataset['network_code']
-    # source_id = dataset.attrs['source_id']
-    # source_distance_km = dataset.attrs['source_distance_km']  
-    # snr_db = np.mean(dataset.attrs['snr_db'])
-    #key = meta_dataset.key
-    # trace_category = dataset.attrs['trace_category']            
-    # trace_start_time = dataset.attrs['trace_start_time'] 
-    # source_magnitude = dataset.attrs['source_magnitude'] 
     P_true = spt
     S_true = sst
-    
-
-    
 
     output_writer.writerow( [
                             P_true,
@@ -650,52 +557,12 @@ def _output_writer_test(args,
         S_prob = None 
         S_unc = None
         S_error = None
-    #print(type(meta_dataset))
-    #if evi.split('_')[-1] == 'EV':                                     
-    # network_code = meta_dataset['network_code']
-    # source_id = dataset.attrs['source_id']
-    # source_distance_km = dataset.attrs['source_distance_km']  
-    # snr_db = np.mean(dataset.attrs['snr_db'])
-    #key = meta_dataset.key
-    # trace_category = dataset.attrs['trace_category']            
-    # trace_start_time = dataset.attrs['trace_start_time'] 
-    # source_magnitude = dataset.attrs['source_magnitude'] 
-    #p_pick = meta_dataset['p_pick'] 
-    #p_status = dataset.attrs['p_status'] 
-    #p_weight = dataset.attrs['p_weight'] 
-    #s_pick = meta_dataset['s_pick'] 
-    # s_status = dataset.attrs['s_status'] 
-    # s_weight = dataset.attrs['s_weight'] 
-    # receiver_type = dataset.attrs['receiver_type']  
-    '''               
-    elif evi.split('_')[-1] == 'NO':               
-        network_code = dataset.attrs['network_code']
-        source_id = None
-        source_distance_km = None 
-        snr_db = None
-        trace_name = dataset.attrs['trace_name'] 
-        trace_category = dataset.attrs['trace_category']            
-        trace_start_time = None
-        source_magnitude = None
-        p_arrival_sample = None
-        p_status = None
-        p_weight = None
-        s_arrival_sample = None
-        s_status = None
-        s_weight = None
-        receiver_type = dataset.attrs['receiver_type'] 
-    '''    
+   
     if P_unc:
         P_unc = round(P_unc, 3)
     
-
-    output_writer.writerow( [#key, 
-    
-                            #p_pick, 
+    output_writer.writerow( [
                              
-                            #s_pick, 
-                             
-                            
                             numberOFdetections,
                             D_prob,
                             D_unc,    
@@ -722,8 +589,6 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
     
 
     """ 
-    
-    Generates plots.
 
     Parameters
     ----------
@@ -792,37 +657,21 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
                 predicted_S.append(match_value[6])
                 
             else:
-                predicted_S.append(None)
-
-
-    
+                predicted_S.append(None)   
     
     meta_data = np.array(meta_dataset)
     data = np.array(dataset)
     fig, axs = plt.subplots(4, 1, figsize=(7.5, 5), sharex=True)
     fig.suptitle(str(evi),y=0.92)
-    #fig = plt.figure()
-    #ax = fig.add_subplot(411)  
-    #  4行1列，第一行     
+  
     axs[0].plot(data[:, 0], color='#1f77b4')
-    #plt.rcParams["figure.figsize"] = (8,5)
-    #legend_properties = {'weight':'bold'}  
-    #plt.title(str(evi))     # evi==key
-    #plt.tight_layout()
-    #ymin, ymax = ax.get_ylim() 
+ 
     pl = None
     sl = None       
     ppl = None
     ssl = None  
     
-    # plt.vlines添加p，s到时的标记线
-    #if meta_dataset['trace_category'] == 'earthquake_local':
-        # if dataset.attrs['p_status'] == 'manual':
     pl = axs[0].axvline(int(spt),color='#9B59B6', alpha=0.9,linestyle='-', linewidth=2, label='Manual_P_Arrival')
-    
-            #pl = plt.vlines(int(spt), ymin, ymax, color='b', linewidth=2, label='Auto_P_Arrival')
-            
-        # if dataset.attrs['s_status'] == 'manual':
     sl = axs[0].axvline(int(sst), color='#2ca02c', alpha=0.9, linestyle='-', linewidth=2, label='Manual_S_Arrival')
     
     if pl or sl:    
@@ -830,14 +679,7 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
 
 
     axs[1].plot(data[:, 1] , color='#1f77b4')  # 4行1列第2个图  
-    # plt.plot(data[:, 1] , 'k')
-    # plt.tight_layout()  # 调整间隔适应画布
-                  
-    # if dataset.attrs['trace_category'] == 'earthquake_local':
-    #     if dataset.attrs['p_status'] == 'manual':
     pl = axs[1].axvline(int(spt),color='#9B59B6', alpha=0.9, linestyle='-', linewidth=2, label='Manual_P_Arrival')
-    
-        # if dataset.attrs['s_status'] == 'manual':
     sl = axs[1].axvline(int(sst), color='#2ca02c', alpha=0.9, linestyle='-', linewidth=2, label='Manual_S_Arrival')
     
     if pl or sl:    
@@ -845,11 +687,8 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
     
 
     axs[2].plot(data[:, 2], color='#1f77b4')    # 第3个预测图
-    # plt.plot(data[:, 2], 'k')   
-    # plt.tight_layout() 
-    #ipdb.set_trace()              
+             
     if len(predicted_P) > 0: 
-        #ymin, ymax = ax.get_ylim()
         for pt in predicted_P:
             if pt:
                 ppl = axs[2].axvline(int(pt), color='#d62728', alpha=0.8, linestyle='-', linewidth=2, label='Predicted_P_Arrival')
@@ -864,7 +703,6 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
         axs[2].legend(loc = 'upper right', fontsize=9, borderaxespad=0.) 
 
                 
-    #ax = fig.add_subplot(414)    # detection的图
     x = np.linspace(0, data.shape[0], data.shape[0], endpoint=True)    # x等差数列，x
     print('x.shape:{}'.format(x.shape))
     
@@ -873,19 +711,7 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
         lowerD = yh1-yh1_std
         upperD = yh1+yh1_std
         plt.fill_between(x, lowerD, upperD, alpha=0.2, color='#1f77b4')            
-                            
-        # plt.plot(x, yh2, 'b--', alpha = 0.5, linewidth=1.5, label='P_probability')
-        # lowerP = yh2-yh2_std
-        # upperP = yh2+yh2_std
-        # plt.fill_between(x, lowerP, upperP, alpha=0.5, edgecolor='#1B2ACC', facecolor='#089FFF')  
-                                     
-        # plt.plot(x, yh3, 'r--', alpha = 0.5, linewidth=1.5, label='S_probability')
-        # lowerS = yh3-yh3_std
-        # upperS = yh3+yh3_std
-        # plt.fill_between(x, lowerS, upperS, edgecolor='#CC4F1B', facecolor='#FF9848')
-        # plt.ylim((-0.1, 1.1))
-        # plt.tight_layout()                
-        # plt.legend(loc = 'upper right', borderaxespad=0., prop=legend_properties) 
+
     else:
         axs[3].plot(x, yh1, color='#1f77b4', linestyle='--',  linewidth=1.5, label='Detection')                       
                           
@@ -900,16 +726,11 @@ def _plotter(meta_dataset, dataset, evi, args, save_figs, yh1, yh2, yh3, yh1_std
     yh3[pred_SS_ind] = 1
     yh3[0:pred_SS_ind-1] = 0
     yh3[pred_SS_ind+1:len(yh3)] = 0    # [0 0 ... 1 1 1 ... 0 0 0]
-    #plt.plot(x, yh1, 'g--', color='#d62728', linestyle='-.', linewidth=1.5, label='Detection')
+
     axs[3].plot(x, yh2, color='#d62728', linestyle='-.', linewidth=1.5, label='P_probability')
     axs[3].plot(x, yh3, color='#ff7f0e', linestyle='dotted', linewidth=1.5, label='S_probability')
-    # plt.tight_layout()       
-    # plt.ylim((-0.1, 1.1))
+
     axs[3].legend(loc = 'upper right', fontsize=9, borderaxespad=0.) 
     # 调整布局
     plt.tight_layout(rect=[0, 0, 1, 0.96])                     
     fig.savefig(os.path.join(save_figs, str(evi.split('/')[-1])+'.svg')) 
-
-
-    
-    
