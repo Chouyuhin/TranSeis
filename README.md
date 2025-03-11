@@ -54,4 +54,5 @@ Some notes that need to be modified in practice
     Qiaojia.h5 group_name：['earthquake']
 
 
-
+## Paper
+Link：https://doi.org/10.1016/j.cageo.2025.105867
