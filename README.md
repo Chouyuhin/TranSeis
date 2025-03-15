@@ -55,4 +55,5 @@ Some notes that need to be modified in practice
 
 
 ## Paper
+Zhou, Y., Zhang, H., Chen, S., Yuan, Z., Tan, C., Huang, F., Guo, Y., Shi, Y., 2025. TranSeis: A high precision multitask seismic waveform detector. Computers & Geosciences 196, 105867. https://doi.org/10.1016/j.cageo.2025.105867
 Link：https://doi.org/10.1016/j.cageo.2025.105867
