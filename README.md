@@ -1,4 +1,4 @@
-# TranSeis
+# TranSeis：A high precision multitask seismic waveform detector.
 
 ## requirments
 
