@@ -1,7 +1,6 @@
 # TranSeis：A high precision multitask seismic waveform detector.
-
-## requirments
-
+## Intro
+### requirements
 ```
 # requirements
 python == 3.7.1
@@ -13,10 +12,30 @@ tqdm == 4.66.2
 scipy == 1.7.3 
 pandas == 1.3.5 
 obspy == 1.3.1 
-
+```
+### download
+```
+git clone https://github.com/Chouyuhin/TranSeis.git
+cd TranSeis
 ```
 
+### training data
+- The DiTing (Zhao et al., 2023) and DiTing2.0 datasets are shared online through the website of the China Earthquake Data Center (https://data.earthquake.cn), where requires permissions, so some example data are provided at example datas.Introductions:
+  ![image](https://github.com/Chouyuhin/TranSeis/figures/Fig1 traning data.png)
+  
+- The TXED dataset is available at https  ://github.com/chenyk1990/txed.
+- Example datas of continues dataset are available.
+### work flow
+ ![image](https://github.com/Chouyuhin/TranSeis/figures/Fig3_process.png)
+
+
+### accuracy comparison
+![image](https://github.com/Chouyuhin/TranSeis/figures/Figure7accuracy.png)
+
+### generalization results
+![image](https://github.com/Chouyuhin/TranSeis/figures/generalization results.png)
 <br/>
+
 
 ## Code explanation
 - data_converted：data preproessing
