@@ -21,10 +21,10 @@ cd TranSeis
 
 ### training data
 - The DiTing (Zhao et al., 2023) and DiTing2.0 datasets are shared online through the website of the China Earthquake Data Center (https://data.earthquake.cn), where requires permissions, so some example data are provided at example datas.Introductions:
-  ![image](https://github.com/Chouyuhin/TranSeis/figures/Fig1 traning data.png)
+  ![image](https://github.com/Chouyuhin/TranSeis/figures/Fig1traningdata.png)
   
 - The TXED dataset is available at https  ://github.com/chenyk1990/txed.
-- Example datas of continues dataset are available.
+- Example datas of continues dataset are available at [sample data](https://github.com/Chouyuhin/TranSeis/sample data).
 ### work flow
  ![image](https://github.com/Chouyuhin/TranSeis/figures/Fig3_process.png)
 
@@ -33,7 +33,7 @@ cd TranSeis
 ![image](https://github.com/Chouyuhin/TranSeis/figures/Figure7accuracy.png)
 
 ### generalization results
-![image](https://github.com/Chouyuhin/TranSeis/figures/generalization results.png)
+![image](https://github.com/Chouyuhin/TranSeis/figures/generalization_results.png)
 <br/>
 
 
